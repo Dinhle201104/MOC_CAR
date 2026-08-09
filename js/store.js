@@ -44,6 +44,17 @@ class Store {
     this.repairCorruptedRentalPrices();
   }
 
+  reloadFromStorage() {
+    const storedCars = localStorage.getItem(STORAGE_KEY_CARS);
+    const storedRentals = localStorage.getItem(STORAGE_KEY_RENTALS);
+    if (storedCars) {
+      try { this.cars = JSON.parse(storedCars); } catch (e) { this.cars = []; }
+    }
+    if (storedRentals) {
+      try { this.rentals = JSON.parse(storedRentals); } catch (e) { this.rentals = []; }
+    }
+  }
+
   repairCorruptedRentalPrices() {
     let modified = false;
     (this.rentals || []).forEach(rent => {
@@ -74,6 +85,7 @@ class Store {
   saveCars() {
     try {
       localStorage.setItem(STORAGE_KEY_CARS, JSON.stringify(this.cars));
+      if (window.MocCarSync) window.MocCarSync.notifyLocalChange('save_cars');
     } catch (e) {
       console.warn('Lưu danh sách xe thất bại:', e);
     }
@@ -82,6 +94,7 @@ class Store {
   saveRentals() {
     try {
       localStorage.setItem(STORAGE_KEY_RENTALS, JSON.stringify(this.rentals));
+      if (window.MocCarSync) window.MocCarSync.notifyLocalChange('save_rentals');
     } catch (e) {
       console.warn('Lưu đơn thuê thất bại:', e);
     }

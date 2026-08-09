@@ -14,6 +14,15 @@ window.MocCarApp = {
     window.MocCarCalendar.init();
     window.MocCarFleet.init();
     window.MocCarReports.init();
+    if (window.MocCarSync) window.MocCarSync.init();
+
+    // Check for synckey in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const syncParam = urlParams.get('synckey');
+    if (syncParam && window.MocCarSync) {
+      window.MocCarSync.setSyncKey(syncParam);
+      window.MocCarSync.pullFromCloud({ silent: false });
+    }
 
     window.MocCarBooking.populateCarDropdown();
     this.switchTab('calendar');
@@ -200,6 +209,125 @@ window.MocCarApp = {
       this.showToast('Đã xóa sạch dữ liệu!', 'info');
       this.refreshAllViews();
     }
+  },
+
+  // --- SYNC MODAL CONTROLLERS ---
+  openSyncModal() {
+    const modal = document.getElementById('modal-sync');
+    if (!modal) return;
+
+    const inputKey = document.getElementById('sync-key-input');
+    const autoSyncCheckbox = document.getElementById('auto-sync-toggle');
+    
+    if (inputKey && window.MocCarSync) {
+      inputKey.value = window.MocCarSync.syncKey || '';
+    }
+    if (autoSyncCheckbox && window.MocCarSync) {
+      autoSyncCheckbox.checked = window.MocCarSync.autoSyncEnabled;
+    }
+
+    this.renderSyncQR();
+    if (window.MocCarSync) window.MocCarSync.updateUIStatus();
+    modal.classList.add('active');
+  },
+
+  saveSyncKeyInput() {
+    const inputKey = document.getElementById('sync-key-input');
+    if (!inputKey || !window.MocCarSync) return;
+    const val = inputKey.value.trim().toUpperCase();
+    if (!val) {
+      this.showToast('Vui lòng nhập Mã Đồng Bộ!', 'warning');
+      return;
+    }
+    window.MocCarSync.setSyncKey(val);
+    this.renderSyncQR();
+    this.showToast(`Đã lưu Mã Đồng Bộ: ${val}`, 'success');
+  },
+
+  generateNewSyncKey() {
+    if (!window.MocCarSync) return;
+    const newKey = window.MocCarSync.generateRandomSyncKey();
+    const inputKey = document.getElementById('sync-key-input');
+    if (inputKey) inputKey.value = newKey;
+    window.MocCarSync.setSyncKey(newKey);
+    this.renderSyncQR();
+    this.showToast(`Đã tạo Mã Đồng Bộ mới: ${newKey}`, 'success');
+  },
+
+  toggleAutoSyncSetting(event) {
+    if (!window.MocCarSync) return;
+    window.MocCarSync.setAutoSync(event.target.checked);
+    this.showToast(event.target.checked ? 'Đã BẬT Tự động đồng bộ Cloud!' : 'Đã TẮT Tự động đồng bộ Cloud', 'info');
+  },
+
+  async pushCloudData() {
+    if (!window.MocCarSync) return;
+    const btn = document.getElementById('btn-push-cloud');
+    if (btn) btn.disabled = true;
+    await window.MocCarSync.pushToCloud({ silent: false });
+    if (btn) btn.disabled = false;
+  },
+
+  async pullCloudData() {
+    if (!window.MocCarSync) return;
+    const btn = document.getElementById('btn-pull-cloud');
+    if (btn) btn.disabled = true;
+    await window.MocCarSync.pullFromCloud({ silent: false });
+    if (btn) btn.disabled = false;
+  },
+
+  copySyncKeyToClipboard() {
+    if (!window.MocCarSync || !window.MocCarSync.syncKey) {
+      this.showToast('Chưa có Mã Đồng Bộ để sao chép!', 'warning');
+      return;
+    }
+    navigator.clipboard.writeText(window.MocCarSync.syncKey).then(() => {
+      this.showToast('Đã sao chép Mã Đồng Bộ vào khay nhớ tạm!', 'success');
+    }).catch(() => {
+      this.showToast(`Mã Đồng Bộ: ${window.MocCarSync.syncKey}`, 'info');
+    });
+  },
+
+  copyQuickCodeToClipboard() {
+    if (!window.MocCarSync) return;
+    const code = window.MocCarSync.getQuickSyncCode();
+    navigator.clipboard.writeText(code).then(() => {
+      this.showToast('Đã sao chép Mã Đồng Bộ Nhanh!', 'success');
+    }).catch(() => {
+      this.showToast('Không thể truy cập khay nhớ tạm!', 'warning');
+    });
+  },
+
+  importQuickCodeFromInput() {
+    const textarea = document.getElementById('quick-sync-code-input');
+    if (!textarea || !textarea.value.trim()) {
+      this.showToast('Vui lòng dán Mã Đồng Bộ Nhanh!', 'warning');
+      return;
+    }
+    const success = window.MocCarSync.importQuickSyncCode(textarea.value);
+    if (success) {
+      textarea.value = '';
+      const modal = document.getElementById('modal-sync');
+      if (modal) modal.classList.remove('active');
+    } else {
+      this.showToast('Mã đồng bộ nhanh không hợp lệ!', 'danger');
+    }
+  },
+
+  renderSyncQR() {
+    const qrImg = document.getElementById('sync-qr-image');
+    const qrContainer = document.getElementById('sync-qr-container');
+    if (!qrImg || !window.MocCarSync) return;
+
+    const key = window.MocCarSync.syncKey;
+    if (!key) {
+      if (qrContainer) qrContainer.style.display = 'none';
+      return;
+    }
+
+    if (qrContainer) qrContainer.style.display = 'block';
+    const qrData = encodeURIComponent(`${window.location.origin}${window.location.pathname}?synckey=${key}`);
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}&color=1e293b&bgcolor=f8fafc`;
   }
 };
 
