@@ -176,6 +176,7 @@ class Store {
       returnDate: rentalData.returnDate || new Date().toISOString().slice(0, 16),
       customerName: rentalData.customerName || 'Khách vãng lai',
       customerPhone: rentalData.customerPhone || '',
+      deliveryAddress: rentalData.deliveryAddress || '',
       customerCCCD: rentalData.customerCCCD || '',
       customerGPLX: rentalData.customerGPLX || '',
       idImages: Array.isArray(rentalData.idImages) ? rentalData.idImages : [],

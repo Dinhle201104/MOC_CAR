@@ -156,7 +156,7 @@ window.MocCarBooking = {
     if (car && priceInput) {
       const daysForBilling = Math.max(1, Math.ceil(daysFloat));
       const suggestedPrice = car.dailyRate * daysForBilling;
-      priceInput.value = suggestedPrice;
+      priceInput.value = window.MocCarUtils.formatMoneyInput(suggestedPrice);
     }
   },
 
@@ -264,13 +264,12 @@ window.MocCarBooking = {
         document.getElementById('booking-car-id').value = rental.carId;
         document.getElementById('booking-pickup').value = rental.pickupDate;
         document.getElementById('booking-return').value = rental.returnDate;
-        document.getElementById('booking-rental-price').value = rental.rentalPrice;
+        document.getElementById('booking-rental-price').value = window.MocCarUtils.formatMoneyInput(rental.rentalPrice);
         document.getElementById('booking-customer-name').value = rental.customerName;
         document.getElementById('booking-customer-phone').value = rental.customerPhone;
-        document.getElementById('booking-customer-cccd').value = rental.customerCCCD || '';
-        document.getElementById('booking-customer-gplx').value = rental.customerGPLX || '';
+        document.getElementById('booking-delivery-address').value = rental.deliveryAddress || '';
         document.getElementById('booking-deposit-type').value = rental.depositType || 'Cọc tiền';
-        document.getElementById('booking-deposit-amount').value = rental.depositAmount || 0;
+        document.getElementById('booking-deposit-amount').value = window.MocCarUtils.formatMoneyInput(rental.depositAmount || 0);
         document.getElementById('booking-deposit-detail').value = rental.depositDetail || '';
         document.getElementById('booking-customer-source').value = rental.customerSource || 'Khách vãng lai';
         document.getElementById('booking-status').value = rental.status || 'Đã Đặt';
@@ -300,6 +299,7 @@ window.MocCarBooking = {
       }
     }
 
+    if (window.MocCarUtils) window.MocCarUtils.attachCurrencyFormatters();
     modal.classList.add('active');
   },
 
@@ -314,11 +314,10 @@ window.MocCarBooking = {
     const carId = document.getElementById('booking-car-id').value;
     const pickupDate = document.getElementById('booking-pickup').value;
     const returnDate = document.getElementById('booking-return').value;
-    const rentalPrice = document.getElementById('booking-rental-price').value;
+    const rentalPrice = window.MocCarUtils.parseMoney(document.getElementById('booking-rental-price').value);
     const customerName = document.getElementById('booking-customer-name').value.trim();
     const customerPhone = document.getElementById('booking-customer-phone').value.trim();
-    const customerCCCD = document.getElementById('booking-customer-cccd').value.trim();
-    const customerGPLX = document.getElementById('booking-customer-gplx').value.trim();
+    const deliveryAddress = document.getElementById('booking-delivery-address').value.trim();
     const status = document.getElementById('booking-status').value;
 
     if (!carId) {
@@ -326,8 +325,8 @@ window.MocCarBooking = {
       return;
     }
 
-    if (!customerName || !customerPhone || !customerCCCD || !customerGPLX || !pickupDate || !returnDate) {
-      window.MocCarApp.showToast('Bắt buộc nhập Họ tên, SĐT, Căn cước công dân (CCCD) và Giấy phép lái xe (GPLX)!', 'warning');
+    if (!customerName || !customerPhone || !pickupDate || !returnDate) {
+      window.MocCarApp.showToast('Bắt buộc nhập Họ tên, Số điện thoại và Thời gian nhận/trả xe!', 'warning');
       return;
     }
 
@@ -335,14 +334,13 @@ window.MocCarBooking = {
       carId,
       pickupDate,
       returnDate,
-      rentalPrice: Number(rentalPrice) || 0,
+      rentalPrice: rentalPrice,
       customerName,
       customerPhone,
-      customerCCCD,
-      customerGPLX,
+      deliveryAddress,
       idImages: this.currentUploadedImages,
       depositType: document.getElementById('booking-deposit-type').value,
-      depositAmount: Number(document.getElementById('booking-deposit-amount').value) || 0,
+      depositAmount: window.MocCarUtils.parseMoney(document.getElementById('booking-deposit-amount').value),
       depositDetail: document.getElementById('booking-deposit-detail').value.trim(),
       customerSource: document.getElementById('booking-customer-source').value,
       status: status,
@@ -404,8 +402,8 @@ window.MocCarBooking = {
       </div>
     `;
 
-    inputRefund.value = rental.depositRefunded !== undefined ? rental.depositRefunded : initialDeposit;
-    inputDeduction.value = rental.depositDeduction || 0;
+    inputRefund.value = window.MocCarUtils.formatMoneyInput(rental.depositRefunded !== undefined ? rental.depositRefunded : initialDeposit);
+    inputDeduction.value = window.MocCarUtils.formatMoneyInput(rental.depositDeduction || 0);
     inputReason.value = rental.depositDeductionReason || '';
 
     this.updateSettlementNetTotal();
@@ -415,7 +413,7 @@ window.MocCarBooking = {
   updateSettlementNetTotal() {
     const inputId = document.getElementById('settlement-rental-id').value;
     const rental = window.MocCarStore.getRentalById(inputId);
-    const deduction = Number(document.getElementById('settlement-deduction-amount').value) || 0;
+    const deduction = window.MocCarUtils.parseMoney(document.getElementById('settlement-deduction-amount').value);
     const displayTotal = document.getElementById('settlement-net-total');
 
     if (rental && displayTotal) {
@@ -426,8 +424,8 @@ window.MocCarBooking = {
 
   submitReturnSettlement() {
     const rentalId = document.getElementById('settlement-rental-id').value;
-    const depositRefunded = Number(document.getElementById('settlement-refund-amount').value) || 0;
-    const depositDeduction = Number(document.getElementById('settlement-deduction-amount').value) || 0;
+    const depositRefunded = window.MocCarUtils.parseMoney(document.getElementById('settlement-refund-amount').value);
+    const depositDeduction = window.MocCarUtils.parseMoney(document.getElementById('settlement-deduction-amount').value);
     const depositDeductionReason = document.getElementById('settlement-deduction-reason').value.trim();
 
     window.MocCarStore.updateRentalStatus(rentalId, 'Đã Trả', {
@@ -457,7 +455,7 @@ window.MocCarBooking = {
       const matchSearch = !searchKeyword ||
         rent.customerName.toLowerCase().includes(searchKeyword) ||
         rent.customerPhone.toLowerCase().includes(searchKeyword) ||
-        (rent.customerCCCD && rent.customerCCCD.toLowerCase().includes(searchKeyword)) ||
+        (rent.deliveryAddress && rent.deliveryAddress.toLowerCase().includes(searchKeyword)) ||
         rent.carName.toLowerCase().includes(searchKeyword) ||
         rent.bks.toLowerCase().includes(searchKeyword);
       return matchCar && matchStatus && matchSearch;
@@ -489,9 +487,7 @@ window.MocCarBooking = {
             <div class="customer-cell">
               <span class="customer-name">${this.escapeHtml(rent.customerName)}</span>
               <span class="customer-sub"><i class="fas fa-phone-alt"></i> ${this.escapeHtml(rent.customerPhone)}</span>
-              <div style="font-size:0.75rem; color:var(--accent-gold); margin-top:2px;">
-                CCCD: ${this.escapeHtml(rent.customerCCCD)} | GPLX: ${this.escapeHtml(rent.customerGPLX)}
-              </div>
+              ${rent.deliveryAddress ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;"><i class="fas fa-map-marker-alt" style="color:var(--primary);"></i> ${this.escapeHtml(rent.deliveryAddress)}</div>` : ''}
               ${hasImages ? `<div style="font-size:0.72rem; color:var(--primary); margin-top:2px;"><i class="fas fa-paperclip"></i> ${rent.idImages.length} ảnh đính kèm</div>` : ''}
             </div>
           </td>
@@ -602,8 +598,7 @@ window.MocCarBooking = {
             <h4 style="color: var(--primary); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase;"><i class="fas fa-user"></i> Khách Hàng</h4>
             <div style="font-weight: 700; font-size: 1.1rem;">${this.escapeHtml(rent.customerName)}</div>
             <div style="margin-top: 0.3rem;"><i class="fas fa-phone"></i> <a href="tel:${rent.customerPhone}" style="color: var(--accent-blue); text-decoration: none; font-weight:700;">${rent.customerPhone}</a></div>
-            <div style="font-size: 0.85rem; color: var(--accent-gold); margin-top: 0.4rem;"><strong>CCCD:</strong> ${rent.customerCCCD}</div>
-            <div style="font-size: 0.85rem; color: var(--accent-gold);"><strong>GPLX:</strong> ${rent.customerGPLX}</div>
+            ${rent.deliveryAddress ? `<div style="margin-top: 0.3rem; font-size: 0.85rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> Giao xe tại: <strong style="color: var(--text-main);">${this.escapeHtml(rent.deliveryAddress)}</strong></div>` : ''}
           </div>
 
           <div class="glass-card" style="padding: 1rem;">

@@ -88,13 +88,14 @@ window.MocCarFleet = {
         document.getElementById('car-name').value = car.name;
         document.getElementById('car-bks').value = car.bks;
         document.getElementById('car-type').value = car.type;
-        document.getElementById('car-daily-rate').value = car.dailyRate;
+        document.getElementById('car-daily-rate').value = window.MocCarUtils.formatMoneyInput(car.dailyRate);
         document.getElementById('car-status').value = car.status;
       }
     } else {
       title.innerHTML = '<i class="fas fa-plus-circle"></i> Thêm Xe Mới Vào Đội Xe';
     }
 
+    if (window.MocCarUtils) window.MocCarUtils.attachCurrencyFormatters();
     modal.classList.add('active');
   },
 
@@ -108,7 +109,7 @@ window.MocCarFleet = {
     const name = document.getElementById('car-name').value.trim();
     const bks = document.getElementById('car-bks').value.trim();
     const type = document.getElementById('car-type').value.trim();
-    const dailyRate = document.getElementById('car-daily-rate').value;
+    const dailyRate = window.MocCarUtils.parseMoney(document.getElementById('car-daily-rate').value);
     const status = document.getElementById('car-status').value;
 
     if (!name || !bks || !dailyRate) {
@@ -120,7 +121,7 @@ window.MocCarFleet = {
       name,
       bks,
       type: type || 'Sedan 4 chỗ',
-      dailyRate: Number(dailyRate) || 0,
+      dailyRate: dailyRate,
       status
     };
 

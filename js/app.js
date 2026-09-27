@@ -1,12 +1,91 @@
-/**
- * MỘC CAR - MAIN APPLICATION CONTROLLER
- * Coordinates UI tabs, mobile drawer sidebar, modal listeners, toasts, and initialization.
- */
+window.MocCarUtils = {
+  parseMoney(val) {
+    if (val === null || val === undefined || val === '') return 0;
+    const digits = String(val).replace(/\D/g, '');
+    return digits ? parseInt(digits, 10) : 0;
+  },
+
+  formatMoneyInput(val) {
+    if (val === null || val === undefined || val === '') return '';
+    const digits = typeof val === 'number' ? String(Math.round(val)) : String(val).replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  },
+
+  formatElement(el) {
+    if (!el) return;
+    if (el.value) {
+      el.value = this.formatMoneyInput(el.value);
+    }
+  },
+
+  attachCurrencyFormatters() {
+    document.querySelectorAll('.currency-input').forEach(input => {
+      if (input.dataset.currencyBound) return;
+      input.dataset.currencyBound = 'true';
+
+      input.addEventListener('input', (e) => {
+        if (e.isComposing) return;
+        const el = e.target;
+        const raw = el.value;
+
+        if (!raw) {
+          el.value = '';
+          return;
+        }
+
+        const selStart = el.selectionStart || 0;
+        const digitsBeforeCursor = raw.slice(0, selStart).replace(/\D/g, '').length;
+
+        const digits = raw.replace(/\D/g, '');
+        if (!digits) {
+          el.value = '';
+          return;
+        }
+
+        const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+        if (el.value !== formatted) {
+          el.value = formatted;
+
+          let newPos = formatted.length;
+          let digitCount = 0;
+          for (let i = 0; i < formatted.length; i++) {
+            if (/\d/.test(formatted[i])) {
+              digitCount++;
+            }
+            if (digitCount === digitsBeforeCursor) {
+              newPos = i + 1;
+              break;
+            }
+          }
+
+          try {
+            el.setSelectionRange(newPos, newPos);
+          } catch (err) { }
+        }
+      });
+
+      input.addEventListener('focus', (e) => {
+        try {
+          e.target.select();
+        } catch (err) { }
+      });
+
+      input.addEventListener('blur', (e) => {
+        if (e.target.value) {
+          e.target.value = window.MocCarUtils.formatMoneyInput(e.target.value);
+        }
+      });
+    });
+  }
+};
 
 window.MocCarApp = {
   currentTab: 'calendar',
 
   init() {
+    window.MocCarUtils.attachCurrencyFormatters();
     this.bindNavigation();
     this.bindGlobalModals();
 
@@ -218,7 +297,7 @@ window.MocCarApp = {
 
     const inputKey = document.getElementById('sync-key-input');
     const autoSyncCheckbox = document.getElementById('auto-sync-toggle');
-    
+
     if (inputKey && window.MocCarSync) {
       inputKey.value = window.MocCarSync.syncKey || '';
     }

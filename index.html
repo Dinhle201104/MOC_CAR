@@ -430,8 +430,7 @@
             <!-- Giá tiền thuê -->
             <div class="form-group">
               <label class="form-label">Giá Tiền Cho Thuê Xe (VNĐ) <span class="req">*</span></label>
-              <input type="number" class="form-input" id="booking-rental-price" placeholder="Nhập giá cho thuê xe..."
-                min="0" step="50000" required>
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="booking-rental-price" placeholder="1.000.000" required>
               <div class="form-hint highlight" id="booking-duration-badge">Tự động tính theo thời gian thuê</div>
             </div>
 
@@ -478,23 +477,16 @@
               <input type="tel" class="form-input" id="booking-customer-phone" placeholder="0908 123 456" required>
             </div>
 
-            <!-- CCCD (BẮT BUỘC) -->
-            <div class="form-group">
-              <label class="form-label">Căn Cước Công Dân (CCCD) <span class="req">*</span></label>
-              <input type="text" class="form-input" id="booking-customer-cccd" placeholder="Nhập số CCCD (bắt buộc)..."
-                required>
-            </div>
-
-            <!-- GPLX (BẮT BUỘC) -->
-            <div class="form-group">
-              <label class="form-label">Giấy Phép Lái Xe (GPLX) <span class="req">*</span></label>
-              <input type="text" class="form-input" id="booking-customer-gplx"
-                placeholder="Nhập số bằng lái xe (bắt buộc)..." required>
+            <!-- Địa chỉ giao xe -->
+            <div class="form-group full-width">
+              <label class="form-label"><i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> Địa Chỉ Giao Xe</label>
+              <input type="text" class="form-input" id="booking-delivery-address"
+                placeholder="Ví dụ: Sân bay Tân Sơn Nhất, 123 Nguyễn Văn Cừ, Q.5, TP.HCM...">
             </div>
 
             <!-- Thêm Ảnh Giấy Tờ (Hỗ trợ Chụp Ảnh Camera Điện Thoại & Thư Viện) -->
             <div class="form-group full-width">
-              <label class="form-label"><i class="fas fa-camera"></i> Ảnh Giấy Tờ (CCCD, GPLX, Giấy tờ xe cọc)</label>
+              <label class="form-label"><i class="fas fa-camera"></i> Ảnh Đính Kèm (Giấy tờ, Xe cọc, Hợp đồng)</label>
 
               <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
                 <button type="button" class="btn btn-primary btn-sm"
@@ -531,7 +523,7 @@
             <!-- Số tiền cọc đã nhận -->
             <div class="form-group">
               <label class="form-label">Số Tiền Cọc Đã Nhận (VNĐ)</label>
-              <input type="number" class="form-input" id="booking-deposit-amount" placeholder="0" min="0" step="100000">
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="booking-deposit-amount" placeholder="500.000">
             </div>
 
             <!-- Chi tiết xe cọc (nếu chọn Cọc xe) -->
@@ -613,13 +605,13 @@
 
             <div class="form-group">
               <label class="form-label">Số Tiền Cọc Hoàn Trả Khách (VNĐ)</label>
-              <input type="number" class="form-input" id="settlement-refund-amount" min="0" step="50000" required>
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="settlement-refund-amount" placeholder="500.000" required>
               <div class="form-hint">Mặc định bằng số tiền cọc đã nhận. Điều chỉnh nếu có hoàn bớt/trừ cọc.</div>
             </div>
 
             <div class="form-group">
               <label class="form-label">Số Tiền Phụ Thu / Khấu Trừ Thêm (VNĐ)</label>
-              <input type="number" class="form-input" id="settlement-deduction-amount" value="0" min="0" step="50000">
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="settlement-deduction-amount" placeholder="0">
               <div class="form-hint">Khấu trừ quá giờ, xăng xe, rửa xe... (Tiền này được cộng vào doanh thu).</div>
             </div>
 
@@ -682,8 +674,7 @@
 
             <div class="form-group">
               <label class="form-label">Giá Thuê Mặc Định / Ngày (VNĐ) <span class="req">*</span></label>
-              <input type="number" class="form-input" id="car-daily-rate" placeholder="1000000" min="0" step="50000"
-                required>
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="car-daily-rate" placeholder="1.000.000" required>
             </div>
 
             <div class="form-group">
@@ -755,7 +746,7 @@
               <button class="btn btn-outline" onclick="window.MocCarApp.generateNewSyncKey()" title="Tạo mã ngẫu nhiên"><i class="fas fa-magic"></i> Tạo Mã</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
-              Cùng nhập mã này trên các máy tính, điện thoại khác để chia sẻ và đồng bộ kho dữ liệu chung.
+              <i class="fas fa-check-circle" style="color: var(--success);"></i> Web đã được bật <strong>tự động đồng bộ liên tục</strong>. Mọi điện thoại & máy tính mở trang đều tự động cập nhật dữ liệu chung mà không cần nhập mã. Bạn có thể đổi mã nếu muốn dùng kênh riêng.
             </div>
           </div>
 

@@ -6,20 +6,33 @@
 
 class SyncEngine {
   constructor() {
-    this.syncKey = localStorage.getItem('moc_car_sync_key') || '';
-    this.autoSyncEnabled = localStorage.getItem('moc_car_auto_sync') === 'true';
+    this.defaultSyncKey = 'MOCCAR-SYNC';
+    this.syncKey = localStorage.getItem('moc_car_sync_key') || this.defaultSyncKey;
+    if (!localStorage.getItem('moc_car_sync_key')) {
+      localStorage.setItem('moc_car_sync_key', this.defaultSyncKey);
+    }
+
+    const storedAuto = localStorage.getItem('moc_car_auto_sync');
+    this.autoSyncEnabled = storedAuto !== null ? storedAuto === 'true' : true;
+    if (storedAuto === null) {
+      localStorage.setItem('moc_car_auto_sync', 'true');
+    }
+
     this.channel = null;
     this.syncStatus = 'idle'; // 'idle', 'syncing', 'success', 'error'
     this.lastSyncedAt = localStorage.getItem('moc_car_last_synced') || null;
-    this.cloudEndpoint = 'https://api.npoint.io'; // Public JSON bin service or fallback KV
-    this.cloudBinId = localStorage.getItem('moc_car_bin_id') || '';
+    this.appKey = 'moc_car_fleet_v1';
     this.isProcessingSync = false;
+    this.pushTimer = null;
+    this.pollIntervalTimer = null;
+    this.lastPayloadHash = '';
   }
 
   init() {
     this.setupCrossTabSync();
     if (this.autoSyncEnabled && this.syncKey) {
       this.pullFromCloud({ silent: true });
+      this.startContinuousPolling(5000);
     }
     this.updateUIStatus();
   }
@@ -49,14 +62,23 @@ class SyncEngine {
 
     // Sync on tab focus
     window.addEventListener('focus', () => {
-      if (this.autoSyncEnabled && this.syncKey) {
+      if (this.autoSyncEnabled && this.syncKey && !this.isProcessingSync) {
         this.pullFromCloud({ silent: true });
       }
     });
   }
 
+  startContinuousPolling(intervalMs = 5000) {
+    if (this.pollIntervalTimer) clearInterval(this.pollIntervalTimer);
+    this.pollIntervalTimer = setInterval(() => {
+      if (this.autoSyncEnabled && this.syncKey && !this.isProcessingSync) {
+        this.pullFromCloud({ silent: true });
+      }
+    }, intervalMs);
+  }
+
   notifyLocalChange(action = 'update') {
-    // Send message to other tabs
+    // Send message to other tabs on same device
     if (this.channel) {
       try {
         this.channel.postMessage({
@@ -80,15 +102,12 @@ class SyncEngine {
     this.isProcessingSync = true;
 
     try {
-      // Reload store from updated localStorage
       if (window.MocCarStore) {
         window.MocCarStore.reloadFromStorage();
       }
 
-      // Refresh UI views
       if (window.MocCarApp) {
         window.MocCarApp.refreshAllViews();
-        window.MocCarApp.showToast('🔄 Dữ liệu vừa được cập nhật từ tab khác!', 'info');
       }
     } catch (e) {
       console.error('Lỗi khi cập nhật dữ liệu từ tab khác:', e);
@@ -101,13 +120,23 @@ class SyncEngine {
     if (this.pushTimer) clearTimeout(this.pushTimer);
     this.pushTimer = setTimeout(() => {
       this.pushToCloud({ silent: true });
-    }, 2000);
+    }, 1000);
+  }
+
+  // --- HELPER UNICODE SAFE BASE64 ---
+  utf8ToBase64(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+  }
+
+  base64ToUtf8(str) {
+    return decodeURIComponent(Array.prototype.map.call(atob(str), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
   }
 
   // --- 2. CROSS-DEVICE CLOUD SYNC ENGINE ---
   setSyncKey(key) {
-    this.syncKey = key ? key.trim().toUpperCase() : '';
+    this.syncKey = key ? key.trim().toUpperCase() : this.defaultSyncKey;
     localStorage.setItem('moc_car_sync_key', this.syncKey);
+    this.pullFromCloud({ silent: false });
     this.updateUIStatus();
   }
 
@@ -116,6 +145,9 @@ class SyncEngine {
     localStorage.setItem('moc_car_auto_sync', this.autoSyncEnabled ? 'true' : 'false');
     if (this.autoSyncEnabled && this.syncKey) {
       this.pushToCloud({ silent: true });
+      this.startContinuousPolling(5000);
+    } else {
+      if (this.pollIntervalTimer) clearInterval(this.pollIntervalTimer);
     }
     this.updateUIStatus();
   }
@@ -147,23 +179,26 @@ class SyncEngine {
     };
 
     try {
-      // Use kvdb.io or JSON storage endpoint based on sync key hash
+      const jsonStr = JSON.stringify(payload);
+      this.lastPayloadHash = JSON.stringify({ cars: payload.cars, rentals: payload.rentals });
+      const base64Data = this.utf8ToBase64(jsonStr);
+
       const sanitizedKey = encodeURIComponent(this.syncKey);
-      const url = `https://kvdb.io/A2qf4zV8K3r1H5xN9mP7qL/${sanitizedKey}`;
+      const encodedValue = encodeURIComponent(base64Data);
+      const url = `https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${this.appKey}/${sanitizedKey}/${encodedValue}`;
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+          'Content-Length': '0'
+        }
       });
 
       if (response.ok) {
-        this.lastSyncedAt = new Date().toISOString();
+        this.lastSyncedAt = payload.updatedAt;
         localStorage.setItem('moc_car_last_synced', this.lastSyncedAt);
         this.setSyncStatus('success');
-        
+
         if (!options.silent && window.MocCarApp) {
           window.MocCarApp.showToast(`Đã đồng bộ dữ liệu thành công lên Cloud! [${this.syncKey}]`, 'success');
         }
@@ -172,15 +207,15 @@ class SyncEngine {
         throw new Error(`Server returned status ${response.status}`);
       }
     } catch (err) {
-      console.warn('Push to Cloud primary failed, attempting JSONBin fallback:', err);
+      console.warn('Push to Cloud primary failed, attempting fallback:', err);
       return await this.pushToFallbackBin(payload, options);
     }
   }
 
   async pushToFallbackBin(payload, options) {
     try {
-      // Direct LocalStorage Cloud Mock / Base64 fallback if offline or API restricted
-      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      const jsonStr = JSON.stringify(payload);
+      const encoded = this.utf8ToBase64(jsonStr);
       localStorage.setItem(`moc_car_cloud_mock_${this.syncKey}`, encoded);
 
       this.lastSyncedAt = new Date().toISOString();
@@ -209,40 +244,76 @@ class SyncEngine {
       return false;
     }
 
+    if (this.isProcessingSync) return false;
+    this.isProcessingSync = true;
     this.setSyncStatus('syncing');
 
     try {
       const sanitizedKey = encodeURIComponent(this.syncKey);
-      const url = `https://kvdb.io/A2qf4zV8K3r1H5xN9mP7qL/${sanitizedKey}`;
+      const url = `https://keyvalue.immanuel.co/api/KeyVal/GetValue/${this.appKey}/${sanitizedKey}`;
 
       const response = await fetch(url);
       if (response.ok) {
-        const remoteData = await response.json();
-        if (remoteData && Array.isArray(remoteData.cars) && Array.isArray(remoteData.rentals)) {
-          // Check if remote is newer or apply
-          window.MocCarStore.cars = remoteData.cars;
-          window.MocCarStore.rentals = remoteData.rentals;
-          window.MocCarStore.saveCars();
-          window.MocCarStore.saveRentals();
-          window.MocCarStore.repairCorruptedRentalPrices();
+        const rawText = await response.text();
+        let base64Val = rawText ? rawText.trim() : '';
+        if (base64Val.startsWith('"') && base64Val.endsWith('"')) {
+          try {
+            base64Val = JSON.parse(base64Val);
+          } catch (e) {}
+        }
 
-          this.lastSyncedAt = remoteData.updatedAt || new Date().toISOString();
-          localStorage.setItem('moc_car_last_synced', this.lastSyncedAt);
-          this.setSyncStatus('success');
+        if (base64Val && base64Val !== 'null' && base64Val !== '""') {
+          const jsonStr = this.base64ToUtf8(base64Val);
+          const remoteData = JSON.parse(jsonStr);
 
-          if (window.MocCarApp) {
-            window.MocCarApp.refreshAllViews();
-            if (!options.silent) {
-              window.MocCarApp.showToast(`Tải dữ liệu thành công từ Cloud [${this.syncKey}]!`, 'success');
+          if (remoteData && Array.isArray(remoteData.cars) && Array.isArray(remoteData.rentals)) {
+            const remoteHash = JSON.stringify({ cars: remoteData.cars, rentals: remoteData.rentals });
+
+            const localHash = JSON.stringify({
+              cars: window.MocCarStore ? window.MocCarStore.cars : [],
+              rentals: window.MocCarStore ? window.MocCarStore.rentals : []
+            });
+
+            if (remoteHash !== localHash) {
+              if (window.MocCarStore) {
+                window.MocCarStore.cars = remoteData.cars;
+                window.MocCarStore.rentals = remoteData.rentals;
+                localStorage.setItem('moc_car_fleet_v2', JSON.stringify(remoteData.cars));
+                localStorage.setItem('moc_car_rentals_v2', JSON.stringify(remoteData.rentals));
+                window.MocCarStore.repairCorruptedRentalPrices();
+              }
+
+              this.lastSyncedAt = remoteData.updatedAt || new Date().toISOString();
+              localStorage.setItem('moc_car_last_synced', this.lastSyncedAt);
+
+              if (window.MocCarApp) {
+                window.MocCarApp.refreshAllViews();
+                if (options.silent) {
+                  window.MocCarApp.showToast('🔄 Dữ liệu vừa được tự động đồng bộ từ thiết bị khác!', 'info');
+                } else {
+                  window.MocCarApp.showToast(`Tải dữ liệu thành công từ Cloud [${this.syncKey}]!`, 'success');
+                }
+              }
             }
+
+            this.lastPayloadHash = remoteHash;
+            this.setSyncStatus('success');
+            return true;
           }
-          return true;
+        } else {
+          // Cloud has no data for this sync key yet -> seed cloud with current store data
+          if (window.MocCarStore && (window.MocCarStore.cars.length > 0 || window.MocCarStore.rentals.length > 0)) {
+            this.isProcessingSync = false;
+            return await this.pushToCloud({ silent: true });
+          }
         }
       }
-      throw new Error('KV storage miss or empty response');
+      throw new Error('KeyValue storage miss or empty response');
     } catch (err) {
       console.warn('Pull from cloud primary failed, checking fallback:', err);
       return await this.pullFromFallbackBin(options);
+    } finally {
+      this.isProcessingSync = false;
     }
   }
 
@@ -250,26 +321,38 @@ class SyncEngine {
     try {
       const encoded = localStorage.getItem(`moc_car_cloud_mock_${this.syncKey}`);
       if (encoded) {
-        const jsonStr = decodeURIComponent(escape(atob(encoded)));
+        const jsonStr = this.base64ToUtf8(encoded);
         const remoteData = JSON.parse(jsonStr);
 
         if (remoteData && Array.isArray(remoteData.cars) && Array.isArray(remoteData.rentals)) {
-          window.MocCarStore.cars = remoteData.cars;
-          window.MocCarStore.rentals = remoteData.rentals;
-          window.MocCarStore.saveCars();
-          window.MocCarStore.saveRentals();
-          window.MocCarStore.repairCorruptedRentalPrices();
+          const remoteHash = JSON.stringify({ cars: remoteData.cars, rentals: remoteData.rentals });
+          const localHash = JSON.stringify({
+            cars: window.MocCarStore ? window.MocCarStore.cars : [],
+            rentals: window.MocCarStore ? window.MocCarStore.rentals : []
+          });
 
-          this.lastSyncedAt = remoteData.updatedAt || new Date().toISOString();
-          localStorage.setItem('moc_car_last_synced', this.lastSyncedAt);
-          this.setSyncStatus('success');
+          if (remoteHash !== localHash) {
+            if (window.MocCarStore) {
+              window.MocCarStore.cars = remoteData.cars;
+              window.MocCarStore.rentals = remoteData.rentals;
+              localStorage.setItem('moc_car_fleet_v2', JSON.stringify(remoteData.cars));
+              localStorage.setItem('moc_car_rentals_v2', JSON.stringify(remoteData.rentals));
+              window.MocCarStore.repairCorruptedRentalPrices();
+            }
 
-          if (window.MocCarApp) {
-            window.MocCarApp.refreshAllViews();
-            if (!options.silent) {
-              window.MocCarApp.showToast(`Đã tải dữ liệu thành công từ kho lưu trữ!`, 'success');
+            this.lastSyncedAt = remoteData.updatedAt || new Date().toISOString();
+            localStorage.setItem('moc_car_last_synced', this.lastSyncedAt);
+
+            if (window.MocCarApp) {
+              window.MocCarApp.refreshAllViews();
+              if (!options.silent) {
+                window.MocCarApp.showToast(`Đã tải dữ liệu thành công từ kho lưu trữ!`, 'success');
+              }
             }
           }
+
+          this.lastPayloadHash = remoteHash;
+          this.setSyncStatus('success');
           return true;
         }
       }
@@ -295,12 +378,12 @@ class SyncEngine {
       c: window.MocCarStore ? window.MocCarStore.cars : [],
       r: window.MocCarStore ? window.MocCarStore.rentals : []
     };
-    return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    return this.utf8ToBase64(JSON.stringify(data));
   }
 
   importQuickSyncCode(codeString) {
     try {
-      const decoded = decodeURIComponent(escape(atob(codeString.trim())));
+      const decoded = this.base64ToUtf8(codeString.trim());
       const parsed = JSON.parse(decoded);
 
       if (Array.isArray(parsed.c) && Array.isArray(parsed.r)) {
@@ -338,9 +421,9 @@ class SyncEngine {
     if (lastSyncEl) {
       if (this.lastSyncedAt) {
         const d = new Date(this.lastSyncedAt);
-        lastSyncEl.textContent = `Lần cuối: ${d.toLocaleTimeString('vi-VN')} ${d.toLocaleDateString('vi-VN')}`;
+        lastSyncEl.textContent = `Lần cuối đồng bộ: ${d.toLocaleTimeString('vi-VN')} ${d.toLocaleDateString('vi-VN')}`;
       } else {
-        lastSyncEl.textContent = 'Chưa đồng bộ Cloud';
+        lastSyncEl.textContent = 'Đã tự động kết nối Cloud';
       }
     }
 
@@ -349,7 +432,7 @@ class SyncEngine {
     if (!this.syncKey) {
       badge.className = 'sync-badge sync-offline';
       badgeIcon.className = 'fas fa-cloud-slash';
-      badgeText.textContent = 'Chưa đặt Mã Sync';
+      badgeText.textContent = 'Tắt Đồng Bộ';
       return;
     }
 
@@ -360,7 +443,7 @@ class SyncEngine {
     } else if (this.syncStatus === 'success') {
       badge.className = 'sync-badge sync-online';
       badgeIcon.className = 'fas fa-check-circle';
-      badgeText.textContent = `Đồng bộ Cloud (${this.syncKey})`;
+      badgeText.textContent = `Tự động đồng bộ (${this.syncKey})`;
     } else if (this.syncStatus === 'error') {
       badge.className = 'sync-badge sync-error';
       badgeIcon.className = 'fas fa-exclamation-triangle';
@@ -368,9 +451,10 @@ class SyncEngine {
     } else {
       badge.className = 'sync-badge sync-online';
       badgeIcon.className = 'fas fa-cloud';
-      badgeText.textContent = `Mã: ${this.syncKey}`;
+      badgeText.textContent = `Tự động đồng bộ (${this.syncKey})`;
     }
   }
 }
 
 window.MocCarSync = new SyncEngine();
+
