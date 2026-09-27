@@ -120,6 +120,9 @@ class SyncEngine {
     if (this.pushTimer) clearTimeout(this.pushTimer);
     this.pushTimer = setTimeout(() => {
       this.pushToCloud({ silent: true });
+      if (typeof window.syncDataToCloud === 'function') {
+        window.syncDataToCloud();
+      }
     }, 1000);
   }
 
@@ -259,7 +262,7 @@ class SyncEngine {
         if (base64Val.startsWith('"') && base64Val.endsWith('"')) {
           try {
             base64Val = JSON.parse(base64Val);
-          } catch (e) {}
+          } catch (e) { }
         }
 
         if (base64Val && base64Val !== 'null' && base64Val !== '""') {
@@ -458,3 +461,47 @@ class SyncEngine {
 
 window.MocCarSync = new SyncEngine();
 
+// --- 1. HÀM GỬI DỮ LIỆU LÊN CLOUD (Dùng khi Laptop nhập/sửa/xóa dữ liệu) ---
+window.syncDataToCloud = async function (data) {
+  if (!window.db) {
+    console.warn("Chưa kết nối được Firebase!");
+    return;
+  }
+
+  try {
+    const payload = data || {
+      cars: window.MocCarStore ? window.MocCarStore.cars : [],
+      rentals: window.MocCarStore ? window.MocCarStore.rentals : []
+    };
+    // Lưu toàn bộ dữ liệu ứng dụng vào bộ sưu tập 'moc_car_app', tài liệu 'app_state'
+    await window.setDoc(window.doc(window.db, "moc_car_app", "app_state"), {
+      payload: payload,
+      lastUpdated: new Date().toISOString()
+    });
+    console.log("Đã đồng bộ dữ liệu lên Firebase Firestore thành công!");
+  } catch (error) {
+    console.error("Lỗi khi gửi dữ liệu lên Cloud Firebase:", error);
+  }
+};
+
+// --- 2. HÀM TỰ ĐỘNG LẮNG NGHE VÀ CẬP NHẬT (Dùng trên Điện thoại/Máy khác) ---
+window.listenForCloudChanges = function (onDataChangedCallback) {
+  if (!window.db) {
+    // Nếu Firebase chưa khởi tạo xong, đợi 0.3s rồi gọi lại
+    setTimeout(() => window.listenForCloudChanges(onDataChangedCallback), 300);
+    return;
+  }
+
+  // Tự động chạy mỗi khi dữ liệu trên Cloud thay đổi
+  window.onSnapshot(window.doc(window.db, "moc_car_app", "app_state"), (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      const cloudData = docSnapshot.data();
+      if (cloudData && cloudData.payload) {
+        console.log("Nhận dữ liệu mới từ Firebase Cloud:", cloudData.payload);
+        if (typeof onDataChangedCallback === "function") {
+          onDataChangedCallback(cloudData.payload);
+        }
+      }
+    }
+  });
+};

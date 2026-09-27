@@ -74,61 +74,62 @@
         </ul>
       </div>
 
-        <div class="sidebar-footer">
-          <div class="quick-stats-mini" style="margin-bottom: 0.75rem;">
-            <div class="mini-stat-label"><i class="fas fa-coins" style="color:var(--primary);"></i> Cộng dồn thực thu:
-            </div>
-            <div class="mini-stat-val" id="mini-stat-revenue" style="color:var(--primary);">0 ₫</div>
+      <div class="sidebar-footer">
+        <div class="quick-stats-mini" style="margin-bottom: 0.75rem;">
+          <div class="mini-stat-label"><i class="fas fa-coins" style="color:var(--primary);"></i> Cộng dồn thực thu:
           </div>
+          <div class="mini-stat-val" id="mini-stat-revenue" style="color:var(--primary);">0 ₫</div>
+        </div>
 
-          <button class="btn btn-primary btn-sm" style="width: 100%; margin-bottom: 0.5rem; justify-content: center;"
-            onclick="window.MocCarApp.openSyncModal()">
-            <i class="fas fa-cloud"></i> Quản Lý Đồng Bộ
+        <button class="btn btn-primary btn-sm" style="width: 100%; margin-bottom: 0.5rem; justify-content: center;"
+          onclick="window.MocCarApp.openSyncModal()">
+          <i class="fas fa-cloud"></i> Quản Lý Đồng Bộ
+        </button>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline btn-sm" style="flex:1; justify-content: center;"
+            onclick="window.MocCarApp.exportDataBackup()" title="Tải xuống tệp sao lưu JSON">
+            <i class="fas fa-download"></i> Sao Lưu
           </button>
+          <button class="btn btn-outline btn-sm" style="flex:1; justify-content: center;"
+            onclick="window.MocCarApp.triggerImportData()" title="Khôi phục từ tệp JSON">
+            <i class="fas fa-upload"></i> Khôi Phục
+          </button>
+          <input type="file" id="import-json-file" accept=".json" style="display: none;"
+            onchange="window.MocCarApp.handleImportFile(event)">
+        </div>
+      </div>
+    </aside>
 
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-outline btn-sm" style="flex:1; justify-content: center;"
-              onclick="window.MocCarApp.exportDataBackup()" title="Tải xuống tệp sao lưu JSON">
-              <i class="fas fa-download"></i> Sao Lưu
-            </button>
-            <button class="btn btn-outline btn-sm" style="flex:1; justify-content: center;"
-              onclick="window.MocCarApp.triggerImportData()" title="Khôi phục từ tệp JSON">
-              <i class="fas fa-upload"></i> Khôi Phục
-            </button>
-            <input type="file" id="import-json-file" accept=".json" style="display: none;"
-              onchange="window.MocCarApp.handleImportFile(event)">
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+
+      <!-- TOP HEADER -->
+      <header class="top-header">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button class="btn btn-secondary btn-icon-only" id="mobile-menu-toggle"
+            onclick="window.MocCarApp.toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="page-heading">
+            <div class="page-title" id="current-page-title">Lịch Cho Thuê Xe</div>
           </div>
         </div>
-      </aside>
 
-      <!-- MAIN CONTENT AREA -->
-      <main class="main-content">
-
-        <!-- TOP HEADER -->
-        <header class="top-header">
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <button class="btn btn-secondary btn-icon-only" id="mobile-menu-toggle"
-              onclick="window.MocCarApp.toggleMobileSidebar()">
-              <i class="fas fa-bars"></i>
-            </button>
-            <div class="page-heading">
-              <div class="page-title" id="current-page-title">Lịch Cho Thuê Xe</div>
-            </div>
+        <div class="header-actions" style="display: flex; align-items: center; gap: 0.75rem;">
+          <div id="sync-status-badge" class="sync-badge sync-offline" onclick="window.MocCarApp.openSyncModal()"
+            title="Bấm để quản lý đồng bộ dữ liệu">
+            <i id="sync-badge-icon" class="fas fa-cloud"></i>
+            <span id="sync-badge-text">Chưa đặt Mã Sync</span>
           </div>
-
-          <div class="header-actions" style="display: flex; align-items: center; gap: 0.75rem;">
-            <div id="sync-status-badge" class="sync-badge sync-offline" onclick="window.MocCarApp.openSyncModal()" title="Bấm để quản lý đồng bộ dữ liệu">
-              <i id="sync-badge-icon" class="fas fa-cloud"></i>
-              <span id="sync-badge-text">Chưa đặt Mã Sync</span>
-            </div>
-            <button class="btn btn-outline" onclick="window.MocCarApp.openSyncModal()" title="Đồng Bộ Đám Mây & Thiết Bị">
-              <i class="fas fa-sync-alt"></i> Đồng Bộ
-            </button>
-            <button class="btn btn-primary" onclick="window.MocCarBooking.openModal()">
-              <i class="fas fa-plus"></i> Tạo Đơn Thuê Nhanh
-            </button>
-          </div>
-        </header>
+          <button class="btn btn-outline" onclick="window.MocCarApp.openSyncModal()" title="Đồng Bộ Đám Mây & Thiết Bị">
+            <i class="fas fa-sync-alt"></i> Đồng Bộ
+          </button>
+          <button class="btn btn-primary" onclick="window.MocCarBooking.openModal()">
+            <i class="fas fa-plus"></i> Tạo Đơn Thuê Nhanh
+          </button>
+        </div>
+      </header>
 
       <!-- VIEW 1: CALENDAR VIEW (MONTH GRID & TIMELINE MATRIX) -->
       <section class="view-section active" id="view-calendar">
@@ -231,12 +232,17 @@
         <!-- KPI Cards Grid -->
         <div class="kpi-grid">
           <!-- CARD CHÍNH: TỔNG SỐ TIỀN ĐÃ NHẬN ĐƯỢC TỪ CHO THUÊ XE -->
-          <div class="kpi-card" style="border: 2px solid var(--primary); background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(30, 41, 59, 0.85));">
-            <div class="kpi-icon emerald" style="width: 58px; height: 58px; font-size: 1.6rem;"><i class="fas fa-hand-holding-usd"></i></div>
+          <div class="kpi-card"
+            style="border: 2px solid var(--primary); background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(30, 41, 59, 0.85));">
+            <div class="kpi-icon emerald" style="width: 58px; height: 58px; font-size: 1.6rem;"><i
+                class="fas fa-hand-holding-usd"></i></div>
             <div class="kpi-info">
-              <span class="kpi-title" style="color: var(--primary); font-weight: 800;">TỔNG SỐ TIỀN ĐÃ NHẬN ĐƯỢC TỪ CHO THUÊ XE</span>
-              <span class="kpi-value" id="kpi-total-cash-received" style="color: #34d399; font-size: 1.65rem;">0 ₫</span>
-              <span class="kpi-subtext" style="color: #a7f3d0;">Tổng tiền thực tế đã thu (Tiền thuê đã trả + Cọc đang giữ)</span>
+              <span class="kpi-title" style="color: var(--primary); font-weight: 800;">TỔNG SỐ TIỀN ĐÃ NHẬN ĐƯỢC TỪ CHO
+                THUÊ XE</span>
+              <span class="kpi-value" id="kpi-total-cash-received" style="color: #34d399; font-size: 1.65rem;">0
+                ₫</span>
+              <span class="kpi-subtext" style="color: #a7f3d0;">Tổng tiền thực tế đã thu (Tiền thuê đã trả + Cọc đang
+                giữ)</span>
             </div>
           </div>
 
@@ -246,9 +252,12 @@
             <div class="kpi-icon gold" style="width: 58px; height: 58px; font-size: 1.6rem;"><i
                 class="fas fa-crown"></i></div>
             <div class="kpi-info">
-              <span class="kpi-title" style="color: var(--accent-gold); font-weight: 800;">TỔNG DOANH THU TOÀN BỘ LỊCH SỬ THUÊ XE</span>
-              <span class="kpi-value" id="kpi-total-lifetime-revenue" style="color: #fbbf24; font-size: 1.65rem;">0 ₫</span>
-              <span class="kpi-subtext" style="color: #fef3c7;">Tổng tất cả doanh thu đã trả xe + Giá trị đơn active</span>
+              <span class="kpi-title" style="color: var(--accent-gold); font-weight: 800;">TỔNG DOANH THU TOÀN BỘ LỊCH
+                SỬ THUÊ XE</span>
+              <span class="kpi-value" id="kpi-total-lifetime-revenue" style="color: #fbbf24; font-size: 1.65rem;">0
+                ₫</span>
+              <span class="kpi-subtext" style="color: #fef3c7;">Tổng tất cả doanh thu đã trả xe + Giá trị đơn
+                active</span>
             </div>
           </div>
 
@@ -430,7 +439,8 @@
             <!-- Giá tiền thuê -->
             <div class="form-group">
               <label class="form-label">Giá Tiền Cho Thuê Xe (VNĐ) <span class="req">*</span></label>
-              <input type="text" inputmode="numeric" class="form-input currency-input" id="booking-rental-price" placeholder="1.000.000" required>
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="booking-rental-price"
+                placeholder="1.000.000" required>
               <div class="form-hint highlight" id="booking-duration-badge">Tự động tính theo thời gian thuê</div>
             </div>
 
@@ -479,7 +489,8 @@
 
             <!-- Địa chỉ giao xe -->
             <div class="form-group full-width">
-              <label class="form-label"><i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> Địa Chỉ Giao Xe</label>
+              <label class="form-label"><i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> Địa Chỉ
+                Giao Xe</label>
               <input type="text" class="form-input" id="booking-delivery-address"
                 placeholder="Ví dụ: Sân bay Tân Sơn Nhất, 123 Nguyễn Văn Cừ, Q.5, TP.HCM...">
             </div>
@@ -523,7 +534,8 @@
             <!-- Số tiền cọc đã nhận -->
             <div class="form-group">
               <label class="form-label">Số Tiền Cọc Đã Nhận (VNĐ)</label>
-              <input type="text" inputmode="numeric" class="form-input currency-input" id="booking-deposit-amount" placeholder="500.000">
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="booking-deposit-amount"
+                placeholder="500.000">
             </div>
 
             <!-- Chi tiết xe cọc (nếu chọn Cọc xe) -->
@@ -605,13 +617,15 @@
 
             <div class="form-group">
               <label class="form-label">Số Tiền Cọc Hoàn Trả Khách (VNĐ)</label>
-              <input type="text" inputmode="numeric" class="form-input currency-input" id="settlement-refund-amount" placeholder="500.000" required>
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="settlement-refund-amount"
+                placeholder="500.000" required>
               <div class="form-hint">Mặc định bằng số tiền cọc đã nhận. Điều chỉnh nếu có hoàn bớt/trừ cọc.</div>
             </div>
 
             <div class="form-group">
               <label class="form-label">Số Tiền Phụ Thu / Khấu Trừ Thêm (VNĐ)</label>
-              <input type="text" inputmode="numeric" class="form-input currency-input" id="settlement-deduction-amount" placeholder="0">
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="settlement-deduction-amount"
+                placeholder="0">
               <div class="form-hint">Khấu trừ quá giờ, xăng xe, rửa xe... (Tiền này được cộng vào doanh thu).</div>
             </div>
 
@@ -674,7 +688,8 @@
 
             <div class="form-group">
               <label class="form-label">Giá Thuê Mặc Định / Ngày (VNĐ) <span class="req">*</span></label>
-              <input type="text" inputmode="numeric" class="form-input currency-input" id="car-daily-rate" placeholder="1.000.000" required>
+              <input type="text" inputmode="numeric" class="form-input currency-input" id="car-daily-rate"
+                placeholder="1.000.000" required>
             </div>
 
             <div class="form-group">
@@ -716,70 +731,91 @@
   <div class="modal-backdrop" id="modal-sync">
     <div class="modal-content" style="max-width: 650px;">
       <div class="modal-header">
-        <h2 class="modal-title"><i class="fas fa-cloud" style="color:var(--primary);"></i> Quản Lý Lưu Trữ & Đồng Bộ Dữ Liệu</h2>
+        <h2 class="modal-title"><i class="fas fa-cloud" style="color:var(--primary);"></i> Quản Lý Lưu Trữ & Đồng Bộ Dữ
+          Liệu</h2>
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
-        
+
         <!-- Tab Local Sync Status -->
-        <div class="sync-info-box" style="background: rgba(30, 41, 59, 0.5); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div class="sync-info-box"
+          style="background: rgba(30, 41, 59, 0.5); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-weight: 600; color: var(--text-main);"><i class="fas fa-desktop" style="color:var(--success);"></i> Đồng Bộ Thời Gian Thực Giữa Các Tab:</span>
+            <span style="font-weight: 600; color: var(--text-main);"><i class="fas fa-desktop"
+                style="color:var(--success);"></i> Đồng Bộ Thời Gian Thực Giữa Các Tab:</span>
             <span class="badge badge-done"><i class="fas fa-check"></i> Đang hoạt động</span>
           </div>
           <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
-            Mọi thay đổi trên tab này sẽ lập tức tự động đồng bộ sang tất cả các tab khác đang mở trên thiết bị này mà không cần bấm F5.
+            Mọi thay đổi trên tab này sẽ lập tức tự động đồng bộ sang tất cả các tab khác đang mở trên thiết bị này mà
+            không cần bấm F5.
           </p>
         </div>
 
         <!-- Cross-Device Cloud Sync Section -->
-        <div style="background: var(--surface-card); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+        <div
+          style="background: var(--surface-card); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <h3
+            style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-globe" style="color:var(--primary);"></i> Đồng Bộ Đám Mây Giữa Nhiều Thiết Bị
           </h3>
-          
+
           <div class="form-group" style="margin-bottom: 1rem;">
-            <label style="font-weight: 600; margin-bottom: 0.4rem; display: block;">Mã Đồng Bộ Cá Nhân (Sync Key):</label>
+            <label style="font-weight: 600; margin-bottom: 0.4rem; display: block;">Mã Đồng Bộ Cá Nhân (Sync
+              Key):</label>
             <div style="display: flex; gap: 0.5rem;">
-              <input type="text" id="sync-key-input" class="form-control" placeholder="VD: MOCCAR-8899" style="font-weight:700; letter-spacing:1px; text-transform:uppercase;">
-              <button class="btn btn-secondary" onclick="window.MocCarApp.saveSyncKeyInput()"><i class="fas fa-save"></i> Lưu Mã</button>
-              <button class="btn btn-outline" onclick="window.MocCarApp.generateNewSyncKey()" title="Tạo mã ngẫu nhiên"><i class="fas fa-magic"></i> Tạo Mã</button>
+              <input type="text" id="sync-key-input" class="form-control" placeholder="VD: MOCCAR-8899"
+                style="font-weight:700; letter-spacing:1px; text-transform:uppercase;">
+              <button class="btn btn-secondary" onclick="window.MocCarApp.saveSyncKeyInput()"><i
+                  class="fas fa-save"></i> Lưu Mã</button>
+              <button class="btn btn-outline" onclick="window.MocCarApp.generateNewSyncKey()"
+                title="Tạo mã ngẫu nhiên"><i class="fas fa-magic"></i> Tạo Mã</button>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
-              <i class="fas fa-check-circle" style="color: var(--success);"></i> Web đã được bật <strong>tự động đồng bộ liên tục</strong>. Mọi điện thoại & máy tính mở trang đều tự động cập nhật dữ liệu chung mà không cần nhập mã. Bạn có thể đổi mã nếu muốn dùng kênh riêng.
+              <i class="fas fa-check-circle" style="color: var(--success);"></i> Web đã được bật <strong>tự động đồng bộ
+                liên tục</strong>. Mọi điện thoại & máy tính mở trang đều tự động cập nhật dữ liệu chung mà không cần
+              nhập mã. Bạn có thể đổi mã nếu muốn dùng kênh riêng.
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; background: rgba(255,255,255,0.03); padding: 0.75rem 1rem; border-radius: var(--radius-sm);">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; background: rgba(255,255,255,0.03); padding: 0.75rem 1rem; border-radius: var(--radius-sm);">
             <div>
               <div style="font-weight: 600; font-size: 0.9rem;">Tự động Đồng bộ Cloud (Auto-Sync)</div>
               <div style="font-size: 0.8rem; color: var(--text-muted);">Tự động đẩy/tải dữ liệu khi có thay đổi</div>
             </div>
             <label class="switch" style="position: relative; display: inline-block; width: 46px; height: 24px;">
-              <input type="checkbox" id="auto-sync-toggle" onchange="window.MocCarApp.toggleAutoSyncSetting(event)" style="opacity: 0; width: 0; height: 0;">
-              <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 24px;"></span>
+              <input type="checkbox" id="auto-sync-toggle" onchange="window.MocCarApp.toggleAutoSyncSetting(event)"
+                style="opacity: 0; width: 0; height: 0;">
+              <span class="slider round"
+                style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 24px;"></span>
             </label>
           </div>
 
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <button id="btn-push-cloud" class="btn btn-primary" style="flex:1; justify-content: center;" onclick="window.MocCarApp.pushCloudData()">
+            <button id="btn-push-cloud" class="btn btn-primary" style="flex:1; justify-content: center;"
+              onclick="window.MocCarApp.pushCloudData()">
               <i class="fas fa-cloud-upload-alt"></i> Tải Lên Cloud (Push)
             </button>
-            <button id="btn-pull-cloud" class="btn btn-secondary" style="flex:1; justify-content: center;" onclick="window.MocCarApp.pullCloudData()">
+            <button id="btn-pull-cloud" class="btn btn-secondary" style="flex:1; justify-content: center;"
+              onclick="window.MocCarApp.pullCloudData()">
               <i class="fas fa-cloud-download-alt"></i> Tải Về Từ Cloud (Pull)
             </button>
           </div>
-          <div id="sync-last-time" style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;"></div>
+          <div id="sync-last-time"
+            style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;"></div>
         </div>
 
         <!-- Quick Share & QR Code -->
-        <div style="background: var(--surface-card); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+        <div
+          style="background: var(--surface-card); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <h3
+            style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-qrcode" style="color:var(--primary);"></i> Chia Sẻ Dữ Liệu Nhanh Qua Mã QR / Chuỗi Mã
           </h3>
-          
+
           <div style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
-            <div id="sync-qr-container" style="text-align: center; background: #fff; padding: 0.5rem; border-radius: var(--radius-sm);">
+            <div id="sync-qr-container"
+              style="text-align: center; background: #fff; padding: 0.5rem; border-radius: var(--radius-sm);">
               <img id="sync-qr-image" src="" alt="Mã QR Đồng bộ" style="width: 140px; height: 140px; display: block;">
             </div>
             <div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 0.5rem;">
@@ -790,8 +826,11 @@
                 <i class="fas fa-code"></i> Sao chép Chuỗi Dữ Liệu Nhanh
               </button>
               <div style="margin-top: 0.25rem;">
-                <textarea id="quick-sync-code-input" class="form-control" rows="2" placeholder="Dán Chuỗi Dữ Liệu Nhanh tại đây..." style="font-size:0.8rem;"></textarea>
-                <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 0.4rem; justify-content: center;" onclick="window.MocCarApp.importQuickCodeFromInput()">
+                <textarea id="quick-sync-code-input" class="form-control" rows="2"
+                  placeholder="Dán Chuỗi Dữ Liệu Nhanh tại đây..." style="font-size:0.8rem;"></textarea>
+                <button class="btn btn-secondary btn-sm"
+                  style="width: 100%; margin-top: 0.4rem; justify-content: center;"
+                  onclick="window.MocCarApp.importQuickCodeFromInput()">
                   <i class="fas fa-file-import"></i> Nhập Dữ Liệu Từ Chuỗi
                 </button>
               </div>
@@ -807,6 +846,43 @@
   </div>
 
 
+  <!-- Tích hợp Firebase Firestore CDN -->
+  <script type="module">
+    // 1. Import chuẩn CDN cho web
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // 2. Thông số Firebase Config của bạn
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQo_wK298AswO4X4rOHsAuxXUCxHd7jlg",
+      authDomain: "moc-car.firebaseapp.com",
+      projectId: "moc-car",
+      storageBucket: "moc-car.firebasestorage.app",
+      messagingSenderId: "489342873934",
+      appId: "1:489342873934:web:bd327b81f472907f40ee1f",
+      measurementId: "G-FZN07SFV35"
+    };
+
+    // 3. Khởi tạo Firebase & Firestore
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
+
+    // Xuất ra window để dùng ở các file JS khác trong project MOC CAR (như js/sync.js, js/store.js)
+    window.db = db;
+    window.doc = doc;
+    window.setDoc = setDoc;
+    window.onSnapshot = onSnapshot;
+
+    console.log("MOC CAR: Kết nối Firebase thành công!");
+  </script>
+
   <!-- JS Application Modules -->
   <script src="js/store.js"></script>
   <script src="js/sync.js"></script>
@@ -815,7 +891,6 @@
   <script src="js/reports.js"></script>
   <script src="js/fleet.js"></script>
   <script src="js/app.js"></script>
-
 </body>
 
 </html>

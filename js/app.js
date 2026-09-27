@@ -413,3 +413,33 @@ window.MocCarApp = {
 document.addEventListener('DOMContentLoaded', () => {
   window.MocCarApp.init();
 });
+// Lắng nghe biến động từ Firebase Firestore để cập nhật giao diện tự động
+if (typeof window.listenForCloudChanges === 'function') {
+  window.listenForCloudChanges((newData) => {
+    if (!newData) return;
+
+    const remoteCars = Array.isArray(newData.cars) ? newData.cars : [];
+    const remoteRentals = Array.isArray(newData.rentals) ? newData.rentals : [];
+
+    const remoteHash = JSON.stringify({ cars: remoteCars, rentals: remoteRentals });
+    const localHash = JSON.stringify({
+      cars: window.MocCarStore ? window.MocCarStore.cars : [],
+      rentals: window.MocCarStore ? window.MocCarStore.rentals : []
+    });
+
+    if (remoteHash !== localHash) {
+      if (window.MocCarStore) {
+        window.MocCarStore.cars = remoteCars;
+        window.MocCarStore.rentals = remoteRentals;
+        localStorage.setItem('moc_car_fleet_v2', JSON.stringify(remoteCars));
+        localStorage.setItem('moc_car_rentals_v2', JSON.stringify(remoteRentals));
+        window.MocCarStore.repairCorruptedRentalPrices();
+      }
+
+      if (window.MocCarApp) {
+        window.MocCarApp.refreshAllViews();
+        window.MocCarApp.showToast('🔄 Dữ liệu vừa được tự động đồng bộ từ Firebase Cloud!', 'info');
+      }
+    }
+  });
+}
